@@ -131,9 +131,9 @@ public class Server extends JFrame implements ActionListener{
 	
 	class UserInfo extends Thread{
 		private InputStream is;
-		private BufferedReader br;
+		private DataInputStream dis;
 		private OutputStream os;
-		private BufferedWriter bw;
+		private DataOutputStream dos;
 		
 		private String NickName;
 		private Socket user_sock;
@@ -143,11 +143,10 @@ public class Server extends JFrame implements ActionListener{
 			this.user_sock = sock;
 			try {
 				is = sock.getInputStream();
-				br = new BufferedReader(new InputStreamReader(is));
+				dis = new DataInputStream(is);
 				os = sock.getOutputStream();
-				bw = new BufferedWriter(new OutputStreamWriter(os));
-				NickName = String.valueOf(br.read());
-				System.out.println(NickName);  
+				dos = new DataOutputStream(os);
+				NickName = dis.readUTF();
 				textArea.append(NickName +"님이 입장하셨습니다.\n");
 			}
 			catch(IOException e) {
@@ -159,7 +158,7 @@ public class Server extends JFrame implements ActionListener{
 		public void run() {
 			while(true) {
 				try {
-					msg = br.readLine();
+					msg = dis.readUTF();
 					textArea.append(msg+"\n");
 				}
 				catch(IOException e) {
@@ -170,7 +169,7 @@ public class Server extends JFrame implements ActionListener{
 		
 		private void sendMessage(String str) {
 			try {
-				bw.write(str+"\n");
+				dos.writeUTF(str);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
