@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
@@ -54,8 +55,8 @@ public class Client extends JFrame implements ActionListener{
 	private Socket sock;
 	private InputStream is;
 	private OutputStream os;
-	private BufferedReader br;
-	private BufferedWriter bw;
+	private DataInputStream dis;
+	private DataOutputStream dos;
 	
 	//the others 
 	private String msg;
@@ -173,9 +174,9 @@ public class Client extends JFrame implements ActionListener{
 	private void connection() {//연결 시 행동
 		try {//입출력 스트림 설정 - 버퍼 + 문자 스트림 사용
 			is = sock.getInputStream();
-			br = new BufferedReader(new InputStreamReader(is));
+			dis = new DataInputStream(is);
 			os = sock.getOutputStream();
-			bw = new BufferedWriter(new OutputStreamWriter(os));
+			dos = new DataOutputStream(os);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -184,10 +185,8 @@ public class Client extends JFrame implements ActionListener{
 	
 	private void sendMessage(String str) {
 		try {
-			str=str+"\n";
-			bw.write(str);
-			System.out.println("송신 끝냄");
-		} catch (IOException e) {
+			dos.writeUTF(str);
+		} catch (Exception e) {
 			System.out.println("메세지 전송 실패");
 			e.printStackTrace();
 		}
