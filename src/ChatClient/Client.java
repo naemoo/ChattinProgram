@@ -2,24 +2,22 @@ package ChatClient;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.StringTokenizer;
+import java.util.Vector;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -37,8 +35,8 @@ public class Client extends JFrame implements ActionListener{
 	
 	//Main을 GUI resource
 	private JPanel contentPane;
-	private JTextField textField;
-	private JButton message_btn = new JButton("쪽지 보내기");
+	private JTextField chat_tf;
+	private JButton note_btn = new JButton("쪽지 보내기");
 	private JButton join_btn = new JButton("채팅방 참여");
 	private JButton create_btn = new JButton("방 만들기");
 	private JButton send_btn = new JButton("전송");
@@ -59,7 +57,9 @@ public class Client extends JFrame implements ActionListener{
 	private DataOutputStream dos;
 	
 	//the others 
-	private String msg;
+	private String msg;//메세지
+	private Vector<String> user_vector = new Vector<>();//user_list에 추가 위해
+	private StringTokenizer st;//inMessage 함수에서 사용하기 위한 파싱 변수
 	
 	public Client() {
 		loginInit();
@@ -124,8 +124,8 @@ public class Client extends JFrame implements ActionListener{
 		lblNewLabel_1.setBounds(12, 213, 83, 15);
 		contentPane.add(lblNewLabel_1);
 		
-		message_btn.setBounds(26, 180, 101, 23);
-		contentPane.add(message_btn);
+		note_btn.setBounds(26, 180, 101, 23);
+		contentPane.add(note_btn);
 		
 		join_btn.setBounds(22, 350, 111, 23);
 		contentPane.add(join_btn);
@@ -136,10 +136,10 @@ public class Client extends JFrame implements ActionListener{
 		chat_area.setBounds(141, 10, 462, 363);
 		contentPane.add(chat_area);
 		
-		textField = new JTextField();
-		textField.setBounds(145, 384, 363, 21);
-		contentPane.add(textField);
-		textField.setColumns(10);
+		chat_tf = new JTextField();
+		chat_tf.setBounds(145, 384, 363, 21);
+		contentPane.add(chat_tf);
+		chat_tf.setColumns(10);
 		
 		send_btn.setBounds(520, 383, 83, 23);
 		contentPane.add(send_btn);
@@ -153,7 +153,7 @@ public class Client extends JFrame implements ActionListener{
 	
 	private void start() {//메세지 시작
 		login_btn.addActionListener(this);
-		message_btn.addActionListener(this);
+		note_btn.addActionListener(this);
 		join_btn.addActionListener(this);
 		create_btn.addActionListener(this);
 		send_btn.addActionListener(this);
@@ -172,7 +172,7 @@ public class Client extends JFrame implements ActionListener{
 		
 	}
 	private void connection() {//연결 시 행동
-		try {//입출력 스트림 설정 - 버퍼 + 문자 스트림 사용
+		try {//1.입출력 스트림 설정 
 			is = sock.getInputStream();
 			dis = new DataInputStream(is);
 			os = sock.getOutputStream();
@@ -180,7 +180,24 @@ public class Client extends JFrame implements ActionListener{
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		//2.현재 접속자에 자신을 추가한다.
 		sendMessage(id);
+		user_vector.add(id);
+		//user_list.setListData(user_vector);
+		
+		//3. 서버 소켓과 통신 시작
+		Thread th = new Thread(()-> {
+			while(true) {
+				try {
+					msg = dis.readUTF();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				inMessage(msg);
+			}
+		});
+		th.start();
 	}
 	
 	private void sendMessage(String str) {
@@ -189,6 +206,31 @@ public class Client extends JFrame implements ActionListener{
 		} catch (Exception e) {
 			System.out.println("메세지 전송 실패");
 			e.printStackTrace();
+		}
+	}
+	
+	private void inMessage(String str) {//protocol에 따라 메세지 처리 -> 파싱을 위해
+		st = new StringTokenizer(str,"/");
+		String protocol = st.nextToken();
+		String Message = st.nextToken();
+		
+		if(protocol.equals("NewUser")){//새로운 유저가 들어왔을 시 
+			user_vector.add(Message);
+			Collections.sort(user_vector);
+			//user_list.setListData(user_vector);
+		}
+		else if(protocol.equals("OldUser")) {
+			user_vector.add(Message);
+			Collections.sort(user_vector);
+			//user_list.setListData(user_vector);
+		}
+		else if(protocol.equals("Note")) {
+			String user = Message;
+			String content = st.nextToken();
+			JOptionPane.showMessageDialog(null, content, user+"로 부터 온 쪽지", JOptionPane.PLAIN_MESSAGE);
+		}
+		else if(protocol.equals("user_vector_update")) {//user_list 갱신 프로토콜
+			user_list.setListData(user_vector);
 		}
 	}
 	
@@ -207,8 +249,14 @@ public class Client extends JFrame implements ActionListener{
 			login_GUI.setVisible(false);
 			this.setVisible(true);
 		}
-		if(e.getSource()==message_btn) {
-			System.out.println("쪽지 보내기 버튼");
+		if(e.getSource()==note_btn) {
+			String user = (String)user_list.getSelectedValue();
+			msg = JOptionPane.showInputDialog("보낼 쪽지 내용을 적어주세요.");
+			//protocol -> Note/보낼 사람/쪽지내용
+			if(msg!=null) {
+				msg = "Note/" + user + "/" + msg;
+				sendMessage(msg);
+			}
 		}
 		if(e.getSource()==join_btn) {
 			System.out.println("참가 버튼");
@@ -217,7 +265,9 @@ public class Client extends JFrame implements ActionListener{
 			System.out.println("채팅방 생성 버튼");
 		}
 		if(e.getSource()==send_btn) {
-			System.out.println("전송 버튼");
+			msg = chat_tf.getText();
+			msg = "Chat/"+msg;
+			sendMessage(msg);
 		}
 		
 		
