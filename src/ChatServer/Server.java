@@ -2,19 +2,16 @@ package ChatServer;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -39,7 +36,8 @@ public class Server extends JFrame implements ActionListener{
 	private Socket sock;
 	
 	//others
-	private List<UserInfo> user_list = new LinkedList<>();
+	private List<UserInfo> user_list = new LinkedList<>();//클라이언트 정보 저장
+	private StringTokenizer st;
 	
 	
 	public Server() {//생성자 
@@ -119,6 +117,7 @@ public class Server extends JFrame implements ActionListener{
 					user.start();
 					
 					user_list.add(user);
+					broadCast("user_vector_update/ ");//user_list 갱신 protocol
 					
 				} catch (IOException e) {
 					System.out.println("클라이언트와의 연결 실패");
@@ -127,6 +126,12 @@ public class Server extends JFrame implements ActionListener{
 			}
 		});
 		th.start();
+	}
+	
+	private void broadCast(String str) {//모든 클라이언트에게 메세지 보내기
+		for (int i = 0; i < user_list.size(); i++) {
+			user_list.get(i).sendMessage(str);
+		}
 	}
 	
 	class UserInfo extends Thread{
@@ -146,8 +151,21 @@ public class Server extends JFrame implements ActionListener{
 				dis = new DataInputStream(is);
 				os = sock.getOutputStream();
 				dos = new DataOutputStream(os);
+				
 				NickName = dis.readUTF();
 				textArea.append(NickName +"님이 입장하셨습니다.\n");
+
+				msg = "NewUser/"+NickName;
+				
+				synchronized (user_list) {
+					//기존 유저에게 새로운 유저 전달
+					broadCast(msg);
+					// 새로운 유저에게 기존 유저 전달
+					for (int i = 0; i < user_list.size(); i++) {
+						msg = "OldUser/"+ user_list.get(i).NickName;
+						sendMessage(msg);
+					}
+				}
 			}
 			catch(IOException e) {
 				e.printStackTrace();
@@ -159,15 +177,35 @@ public class Server extends JFrame implements ActionListener{
 			while(true) {
 				try {
 					msg = dis.readUTF();
-					textArea.append(msg+"\n");
+					inMessage(msg);
 				}
 				catch(IOException e) {
 					e.printStackTrace();
 				}
 			}
 		}
+		private void inMessage(String str) {
+			st = new StringTokenizer(str,"/");
+			String protocol = st.nextToken();
+			String Message = st.nextToken();
+			
+			if(protocol.equals("Chat")) {
+				textArea.append(NickName+": "+Message+"\n");
+			}
+			else if(protocol.equals("Note")) {
+				String user = Message;
+				String note = st.nextToken();
+				System.out.println(note);
+				for(int i=0;i<user_list.size();i++) {
+					if(user.equals(user_list.get(i).NickName)) {
+						note = "Note/"+NickName+"/"+note;
+						user_list.get(i).sendMessage(note);
+					}
+				}
+			}
+		}
 		
-		private void sendMessage(String str) {
+		private void sendMessage(String str) {//자신과 연결된 클라이언트에게 메세지 보내기
 			try {
 				dos.writeUTF(str);
 			} catch (IOException e) {
