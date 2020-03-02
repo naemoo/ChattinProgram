@@ -183,7 +183,6 @@ public class Client extends JFrame implements ActionListener{
 		//2.현재 접속자에 자신을 추가한다.
 		sendMessage(id);
 		user_vector.add(id);
-		//user_list.setListData(user_vector);
 		
 		//3. 서버 소켓과 통신 시작
 		Thread th = new Thread(()-> {
@@ -217,12 +216,10 @@ public class Client extends JFrame implements ActionListener{
 		if(protocol.equals("NewUser")){//새로운 유저가 들어왔을 시 
 			user_vector.add(Message);
 			Collections.sort(user_vector);
-			//user_list.setListData(user_vector);
 		}
 		else if(protocol.equals("OldUser")) {
 			user_vector.add(Message);
 			Collections.sort(user_vector);
-			//user_list.setListData(user_vector);
 		}
 		else if(protocol.equals("Note")) {
 			String user = Message;
