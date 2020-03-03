@@ -61,6 +61,7 @@ public class Client extends JFrame implements ActionListener{
 	private Vector<String> user_vector = new Vector<>();//user_list에 추가 위해
 	private Vector<String> room_vector = new Vector<>();//room_list에 추가 위해
 	private StringTokenizer st;//inMessage 함수에서 사용하기 위한 파싱 변수
+	private String myRoom = null;
 	
 	public Client() {
 		loginInit();
@@ -238,6 +239,14 @@ public class Client extends JFrame implements ActionListener{
 			Collections.sort(room_vector);
 			room_list.setListData(room_vector);
 		}
+		else if(protocol.equals("CreateRoom")) {
+			myRoom = Message;
+		}
+		else if(protocol.equals("Chat")) {
+			String user = Message;
+			String cont = st.nextToken();
+			chat_area.append(user+": "+cont);
+		}
 	}
 	
 	@Override
@@ -275,9 +284,13 @@ public class Client extends JFrame implements ActionListener{
 			}
 		}
 		if(e.getSource()==send_btn) {
-			msg = chat_tf.getText();
-			msg = "Chat/"+msg;
-			sendMessage(msg);
+			msg = chat_tf.getText().trim();
+			//대화 전송 프로토콜 -Chat/속한 방이름/내용
+			if(msg!=null) {
+				msg = "Chat/" + myRoom + "/" + msg;
+				chat_tf.setText("");
+				sendMessage(msg);
+			}
 		}
 		
 		
