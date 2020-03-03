@@ -59,6 +59,7 @@ public class Client extends JFrame implements ActionListener{
 	//the others 
 	private String msg;//메세지
 	private Vector<String> user_vector = new Vector<>();//user_list에 추가 위해
+	private Vector<String> room_vector = new Vector<>();//room_list에 추가 위해
 	private StringTokenizer st;//inMessage 함수에서 사용하기 위한 파싱 변수
 	
 	public Client() {
@@ -229,6 +230,14 @@ public class Client extends JFrame implements ActionListener{
 		else if(protocol.equals("user_vector_update")) {//user_list 갱신 프로토콜
 			user_list.setListData(user_vector);
 		}
+		else if(protocol.equals("CreteRoomFail")) {
+			JOptionPane.showMessageDialog(null, "이미 존재하는 방 이름입니다.", "방 생성 실패", JOptionPane.ERROR_MESSAGE);
+		}
+		else if(protocol.equals("NewRoom")) {
+			room_vector.add(Message);
+			Collections.sort(room_vector);
+			room_list.setListData(room_vector);
+		}
 	}
 	
 	@Override
@@ -258,8 +267,12 @@ public class Client extends JFrame implements ActionListener{
 		if(e.getSource()==join_btn) {
 			System.out.println("참가 버튼");
 		}
-		if(e.getSource()==create_btn) {
-			System.out.println("채팅방 생성 버튼");
+		if(e.getSource()==create_btn) {//채팅방 생성 protocol - CreateRoom/roomName
+			msg = JOptionPane.showInputDialog("채팅방 이름을 설정하세요.");
+			if(msg != null) {
+				msg = "CreateRoom/"+ msg;
+				sendMessage(msg);
+			}
 		}
 		if(e.getSource()==send_btn) {
 			msg = chat_tf.getText();

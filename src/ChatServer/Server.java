@@ -9,10 +9,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import javax.print.attribute.standard.Severity;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -37,6 +40,7 @@ public class Server extends JFrame implements ActionListener{
 	
 	//others
 	private List<UserInfo> user_list = new LinkedList<>();//클라이언트 정보 저장
+	private List<RoomInfo> room_list = new LinkedList<>();
 	private StringTokenizer st;
 	
 	
@@ -203,6 +207,19 @@ public class Server extends JFrame implements ActionListener{
 					}
 				}
 			}
+			else if(protocol.equals("CreateRoom")) {
+				if(Collections.binarySearch(room_list, Message) < 0) {//겹치는 방 이름이 없을 경우
+					RoomInfo r = new RoomInfo(Message,this);//현재 클라이언트를 저장
+					room_list.add(r);
+					Collections.sort(room_list,(r1,r2)->r1.roomName.compareTo(r2.roomName));//알파벳순으로 정렬
+					//protocol - NewRoom/방이름
+					String newMessage = "NewRoom/"+Message;
+					broadCast(newMessage);
+				}
+				else {
+					sendMessage("CreteRoomFail/ ");
+				}
+			}
 		}
 		
 		private void sendMessage(String str) {//자신과 연결된 클라이언트에게 메세지 보내기
@@ -211,6 +228,19 @@ public class Server extends JFrame implements ActionListener{
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		}
+	}
+	class RoomInfo implements Comparable<String>{
+
+		private String roomName;
+		private List<UserInfo> room_user_list = new LinkedList<>();
+		public RoomInfo(String roomName,UserInfo u) {
+			this.roomName = roomName;
+			room_user_list.add(u);
+		}
+		@Override
+		public int compareTo(String o) {
+			return roomName.compareTo(o);
 		}
 	}
 	
