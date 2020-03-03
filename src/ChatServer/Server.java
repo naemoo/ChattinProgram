@@ -194,6 +194,13 @@ public class Server extends JFrame implements ActionListener{
 			String Message = st.nextToken();
 			
 			if(protocol.equals("Chat")) {
+				String room = Message;
+				int roomIdx = Collections.binarySearch(room_list, room);
+				Message = st.nextToken();
+				if(roomIdx>=0) {//방이 존재할 때 해당 방에게 쪽지 돌림
+					Message = "Chat/"+NickName+"/"+Message+"\n";
+					room_list.get(roomIdx).roomBroadCast(Message);
+				}
 				textArea.append(NickName+": "+Message+"\n");
 			}
 			else if(protocol.equals("Note")) {
@@ -215,6 +222,8 @@ public class Server extends JFrame implements ActionListener{
 					//protocol - NewRoom/방이름
 					String newMessage = "NewRoom/"+Message;
 					broadCast(newMessage);
+					newMessage = "CreateRoom/"+Message;
+					sendMessage(newMessage);
 				}
 				else {
 					sendMessage("CreteRoomFail/ ");
@@ -241,6 +250,13 @@ public class Server extends JFrame implements ActionListener{
 		@Override
 		public int compareTo(String o) {
 			return roomName.compareTo(o);
+		}
+		
+		private void roomBroadCast(String str) {
+			for(int i = 0 ; i <room_user_list.size();i++) {
+				UserInfo  u = room_user_list.get(i);
+				u.sendMessage(str);
+			}
 		}
 	}
 	
