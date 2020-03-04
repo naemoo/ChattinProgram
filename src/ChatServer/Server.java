@@ -122,7 +122,7 @@ public class Server extends JFrame implements ActionListener{
 					
 					user_list.add(user);
 					broadCast("user_vector_update/ ");//user_list 갱신 protocol
-					
+					broadCast("room_vector_update/ ");//user_list 갱신 protocol
 				} catch (IOException e) {
 					System.out.println("클라이언트와의 연결 실패");
 					e.printStackTrace();
@@ -161,14 +161,23 @@ public class Server extends JFrame implements ActionListener{
 
 				msg = "NewUser/"+NickName;
 				
+			
 				synchronized (user_list) {
 					//기존 유저에게 새로운 유저 전달
 					broadCast(msg);
+					
 					// 새로운 유저에게 기존 유저 전달
 					for (int i = 0; i < user_list.size(); i++) {
 						msg = "OldUser/"+ user_list.get(i).NickName;
 						sendMessage(msg);
 					}
+					
+					// 새로운 유저에게 방 리스트 주기
+					for(int i = 0 ; i< room_list.size();i++) {
+						msg = "OriginalRoom/"+room_list.get(i).roomName;
+						sendMessage(msg);
+					}
+					
 				}
 			}
 			catch(IOException e) {
@@ -201,7 +210,6 @@ public class Server extends JFrame implements ActionListener{
 					Message = "Chat/"+NickName+"/"+Message+"\n";
 					room_list.get(roomIdx).roomBroadCast(Message);
 				}
-				textArea.append(NickName+": "+Message+"\n");
 			}
 			else if(protocol.equals("Note")) {
 				String user = Message;
@@ -228,6 +236,13 @@ public class Server extends JFrame implements ActionListener{
 				else {
 					sendMessage("CreteRoomFail/ ");
 				}
+			}
+			else if(protocol.equals("JoinRoom")) {
+				int idx = Collections.binarySearch(room_list, Message);
+				room_list.get(idx).roomBroadCast("NewRoomUser/"+NickName);
+				room_list.get(idx).room_user_list.add(this);
+				msg = "AccessRoom/"+Message;//AccessRoom/방이름
+				sendMessage(msg);
 			}
 		}
 		

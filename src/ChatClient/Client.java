@@ -247,6 +247,19 @@ public class Client extends JFrame implements ActionListener{
 			String cont = st.nextToken();
 			chat_area.append(user+": "+cont);
 		}
+		else if(protocol.equals("OriginalRoom")) {
+			room_vector.add(Message);
+		}
+		else if(protocol.equals("room_vector_update")) {
+			room_list.setListData(room_vector);
+		}
+		else if(protocol.equals("AccessRoom")) {
+			myRoom = Message;
+			JOptionPane.showMessageDialog(null, Message+"에 참가합니다.", "방 참가", JOptionPane.PLAIN_MESSAGE);
+		}
+		else if(protocol.equals("NewRoomUser")) {
+			chat_area.append(Message+"님이 참가하셨습니다.\n");
+		}
 	}
 	
 	@Override
@@ -266,21 +279,38 @@ public class Client extends JFrame implements ActionListener{
 		}
 		if(e.getSource()==note_btn) {
 			String user = (String)user_list.getSelectedValue();
-			msg = JOptionPane.showInputDialog("보낼 쪽지 내용을 적어주세요.");
-			//protocol -> Note/보낼 사람/쪽지내용
-			if(msg!=null) {
-				msg = "Note/" + user + "/" + msg;
-				sendMessage(msg);
+			if(user !=null) {
+				msg = JOptionPane.showInputDialog("보낼 쪽지 내용을 적어주세요.");
+				//protocol -> Note/보낼 사람/쪽지내용
+				if(msg!=null) {
+					msg = "Note/" + user + "/" + msg;
+					sendMessage(msg);
+				}
+			}
+			else {
+				JOptionPane.showMessageDialog(null, "쪽지를 보낼 상대를 선택해주세요.", "쪽지 보내기 오류",JOptionPane.ERROR_MESSAGE);
 			}
 		}
 		if(e.getSource()==join_btn) {
-			System.out.println("참가 버튼");
+			String roomName = (String)room_list.getSelectedValue();
+			if(roomName!=null) {
+				msg = "JoinRoom/" + roomName;
+				sendMessage(msg);
+			}
+			else {
+				JOptionPane.showMessageDialog(null, "들어갈 방을 선택해주세요.", "방 참가 오류",JOptionPane.ERROR_MESSAGE);
+			}
 		}
 		if(e.getSource()==create_btn) {//채팅방 생성 protocol - CreateRoom/roomName
 			msg = JOptionPane.showInputDialog("채팅방 이름을 설정하세요.");
 			if(msg != null) {
-				msg = "CreateRoom/"+ msg;
-				sendMessage(msg);
+				if(msg.equals("")) {
+					JOptionPane.showMessageDialog(null, "방 이름을 설정해 주세요.", "방 생성 실패", JOptionPane.ERROR_MESSAGE);
+				}
+				else {
+					msg = "CreateRoom/" + msg;
+					sendMessage(msg);
+				}
 			}
 		}
 		if(e.getSource()==send_btn) {
